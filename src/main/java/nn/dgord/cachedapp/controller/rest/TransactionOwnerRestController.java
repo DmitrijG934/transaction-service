@@ -3,8 +3,7 @@ package nn.dgord.cachedapp.controller.rest;
 import nn.dgord.cachedapp.model.department.Department;
 import nn.dgord.cachedapp.model.owner.OwnerDto;
 import nn.dgord.cachedapp.model.owner.TransactionOwner;
-import nn.dgord.cachedapp.repository.OwnerJpaRepository;
-import org.springframework.cache.annotation.Cacheable;
+import nn.dgord.cachedapp.service.TransactionOwnerDao;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,11 +25,11 @@ import static nn.dgord.cachedapp.CachedAppApplication.API_PREFIX;
 
 @RestController
 @RequestMapping(API_PREFIX + "owner/{departmentId}")
-public class UserRestController {
-    private final OwnerJpaRepository ownerJpaRepository;
+public class TransactionOwnerRestController {
+    private final TransactionOwnerDao transactionOwnerDao;
 
-    public UserRestController(OwnerJpaRepository ownerJpaRepository) {
-        this.ownerJpaRepository = ownerJpaRepository;
+    public TransactionOwnerRestController(TransactionOwnerDao transactionOwnerDao) {
+        this.transactionOwnerDao = transactionOwnerDao;
     }
 
     @GetMapping
@@ -48,16 +47,15 @@ public class UserRestController {
         owner.setRegisterDate(new Date());
         owner.setDepartment(department);
 
-        TransactionOwner savedOwner = ownerJpaRepository.save(owner);
+        TransactionOwner savedOwner = transactionOwnerDao.create(owner);
         return ResponseEntity.ok(savedOwner.convert());
     }
 
     @GetMapping("{userId}")
-    @Cacheable(value = "transaction_owners", key = "#transactionOwner.name")
     public OwnerDto getById(@PathVariable(name = "departmentId") final Department department,
                                     @PathVariable(name = "userId") final TransactionOwner transactionOwner) {
-        return ownerJpaRepository.findTransactionOwnerByDepartmentAndUserId(department,
-                transactionOwner.getUserId()).convert();
+        return transactionOwnerDao.getByDepartmentAndUserId(department,
+                transactionOwner).convert();
     }
 
     @DeleteMapping("delete/{ownerId}")
@@ -66,15 +64,15 @@ public class UserRestController {
             @PathVariable final String ownerId
     ) {
 
-        TransactionOwner owner = ownerJpaRepository
-                .findTransactionOwnerByDepartmentAndUserId(department, UUID.fromString(ownerId));
-        ownerJpaRepository.delete(owner);
+        TransactionOwner owner = transactionOwnerDao
+                .getByDepartmentAndUserId(department, UUID.fromString(ownerId));
+        transactionOwnerDao.delete(owner.getUserId());
         return ResponseEntity.ok(owner.convert());
     }
 
     private List<OwnerDto> getOwners(Department department, String size) {
         List<TransactionOwner> ownersFromDb =
-                ownerJpaRepository.findAllByDepartment(department);
+                transactionOwnerDao.getAllByDepartment(department);
         if (!StringUtils.isEmpty(size)) {
             int amount = Integer.parseInt(size);
             if (amount >= 1 && ownersFromDb.size() >= amount) {

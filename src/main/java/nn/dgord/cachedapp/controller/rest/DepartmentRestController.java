@@ -2,10 +2,9 @@ package nn.dgord.cachedapp.controller.rest;
 
 import nn.dgord.cachedapp.model.department.Department;
 import nn.dgord.cachedapp.model.error.ApiError;
-import nn.dgord.cachedapp.repository.DepartmentJpaRepository;
+import nn.dgord.cachedapp.service.DepartmentDao;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -29,34 +27,26 @@ import static nn.dgord.cachedapp.CachedAppApplication.API_PREFIX;
 @RestController
 @RequestMapping(API_PREFIX + "departments")
 public class DepartmentRestController {
-    private final DepartmentJpaRepository repository;
+    private final DepartmentDao departmentDao;
 
-    public DepartmentRestController(DepartmentJpaRepository repository) {
-        this.repository = repository;
+    public DepartmentRestController(DepartmentDao departmentDao) {
+        this.departmentDao = departmentDao;
     }
 
     @GetMapping
     public List<Department> listDepartments(
             @RequestParam(required = false, name = "amount") final String size) {
-        List<Department> departments = repository.findAll();
-        if (!StringUtils.isEmpty(size)) {
-            int amount = Integer.parseInt(size);
-            if (amount >= 1 && departments.size() >= amount) {
-                List<Department> sizedDepartments = new ArrayList<>();
-                for (int i = 0; i < amount; i++) {
-                    sizedDepartments.add(departments.get(i));
-                }
-                return sizedDepartments;
-            }
+        return departmentDao.getAllWithSize(size);
+    }
 
-        }
-        return departments;
+    @GetMapping("{departmentId}")
+    public Department getDepartmentById(@PathVariable final String departmentId) {
+        return departmentDao.getOne(UUID.fromString(departmentId));
     }
 
     @PostMapping
     public ResponseEntity<Object> createDepartment(@Valid @RequestBody Department department,
                                                    BindingResult result) {
-        department.setCreatedAt(new Date());
         if (result.hasErrors()) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -66,25 +56,21 @@ public class DepartmentRestController {
                             .timestamp(LocalDateTime.now())
                             .build());
         }
-        repository.save(department);
+        department.setCreatedAt(new Date());
+        departmentDao.create(department);
         return ResponseEntity.ok(department);
     }
 
     @PutMapping("{departmentId}")
     public Department updateDepartment(@PathVariable String departmentId,
                                        @RequestBody Department updated) {
-        return repository.findById(UUID.fromString(departmentId))
-                .map(dep -> {
-                    dep.setUpdatedAt(new Date());
-                    dep.setName(updated.getName());
-                    repository.save(dep);
-                    return dep;
-                }).orElseThrow();
+        updated.setUpdatedAt(new Date());
+        return departmentDao.update(updated, UUID.fromString(departmentId));
     }
 
     @DeleteMapping("{departmentId}")
     public UUID deleteDepartment(@PathVariable final String departmentId) {
-        repository.deleteById(UUID.fromString(departmentId));
+        departmentDao.delete(UUID.fromString(departmentId));
         return UUID.fromString(departmentId);
     }
 }

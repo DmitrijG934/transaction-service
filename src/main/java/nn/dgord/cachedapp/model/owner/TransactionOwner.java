@@ -9,6 +9,7 @@ import nn.dgord.cachedapp.model.department.Department;
 import nn.dgord.cachedapp.model.item.Item;
 import nn.dgord.cachedapp.model.transaction.UserTransaction;
 import nn.dgord.cachedapp.utils.Convertible;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
@@ -54,7 +55,7 @@ public class TransactionOwner extends BaseEntity implements Convertible<OwnerDto
     @ElementCollection(targetClass = Priority.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "owner_priority", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(value = EnumType.STRING)
-    private Set<Priority> priority = new HashSet<>();
+    private Set<Priority> priority = new HashSet<>() { { add(Priority.OPTIONAL); } };
 
     @OneToMany(targetEntity = UserTransaction.class)
     @JoinColumn
@@ -78,17 +79,33 @@ public class TransactionOwner extends BaseEntity implements Convertible<OwnerDto
 
     @Override
     public OwnerDto convert() {
-        return OwnerDto.builder()
-                .departmentId(this.getDepartment().getDepartmentId())
-                .id(this.getUserId())
-                .isActive(this.getIsActive())
-                .name(this.getName())
-                .priority(this.getPriority())
-                .registerDate(this.getRegisterDate())
-                .build();
+        OwnerDto.OwnerDtoBuilder ownerDtoBuilder = OwnerDto.builder();
+        if (this.getDepartment().getDepartmentId() != null) {
+            ownerDtoBuilder.departmentId(this.getDepartment().getDepartmentId());
+        }
+        if (this.userId != null) {
+            ownerDtoBuilder.id(this.userId);
+        }
+        if (this.name != null && !StringUtils.isEmpty(this.name)) {
+            ownerDtoBuilder.name(this.name);
+        }
+        if (this.isActive != null) {
+            ownerDtoBuilder.isActive(this.isActive);
+        }
+        if (this.priority != null && this.priority.size() != 0) {
+            ownerDtoBuilder.priority(this.priority);
+        }
+        if (this.registerDate != null) {
+            ownerDtoBuilder.registerDate(this.registerDate);
+        }
+        return ownerDtoBuilder.build();
     }
 
     public enum Priority {
         PRIMARY, OPTIONAL
+    }
+
+    public void addPriority(Priority priority) {
+        this.priority.add(priority);
     }
 }
