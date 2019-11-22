@@ -11,9 +11,11 @@ import java.util.Collections;
 @Configuration
 public class ApplicationConfig {
     @Bean
-    public CacheManager defaultCacheManager() {
-        SimpleCacheManager simpleCacheManager = new SimpleCacheManager();
-        simpleCacheManager.setCaches(Collections.singleton(new ConcurrentMapCache("default")));
-        return simpleCacheManager;
+    public CacheManager ehCacheManager() {
+        SimpleCacheManager cacheManager = new SimpleCacheManager();
+        cacheManager.setCaches(
+                Collections.singleton(new ConcurrentMapCache("transaction_owners"))
+        );
+        return cacheManager;
     }
 }

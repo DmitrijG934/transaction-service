@@ -4,6 +4,7 @@ import nn.dgord.cachedapp.model.department.Department;
 import nn.dgord.cachedapp.model.owner.OwnerDto;
 import nn.dgord.cachedapp.model.owner.TransactionOwner;
 import nn.dgord.cachedapp.repository.OwnerJpaRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -49,6 +50,14 @@ public class UserRestController {
 
         TransactionOwner savedOwner = ownerJpaRepository.save(owner);
         return ResponseEntity.ok(savedOwner.convert());
+    }
+
+    @GetMapping("{userId}")
+    @Cacheable(value = "transaction_owners", key = "#transactionOwner.name")
+    public OwnerDto getById(@PathVariable(name = "departmentId") final Department department,
+                                    @PathVariable(name = "userId") final TransactionOwner transactionOwner) {
+        return ownerJpaRepository.findTransactionOwnerByDepartmentAndUserId(department,
+                transactionOwner.getUserId()).convert();
     }
 
     @DeleteMapping("delete/{ownerId}")
