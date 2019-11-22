@@ -1,0 +1,52 @@
+plugins {
+    id 'org.springframework.boot' version '2.2.1.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+    id 'java'
+    id 'com.google.cloud.tools.jib' version '1.8.0'
+}
+
+group = 'nn.dgord'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+jib {
+    from {
+        image = 'openjdk:11'
+        auth {
+            username = DOCKER_REGISTRY_USER
+            password = DOCKER_REGISTRY_PASS
+        }
+
+    }
+    to {
+        image = '324124/transaction-service'
+        tags = ['v1']
+        auth {
+            username = DOCKER_REGISTRY_USER
+            password = DOCKER_REGISTRY_PASS
+        }
+    }
+    container {
+        mainClass = 'nn.dgord.cachedapp.CachedAppApplication'
+        ports = ['8080']
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.postgresql:postgresql'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+}
