@@ -6,6 +6,11 @@ import org.springframework.cache.concurrent.ConcurrentMapCache;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
 
 import java.util.List;
 
@@ -15,6 +20,7 @@ import static nn.dgord.cachedapp.CachedAppApplication.TRANSACTION_OWNER_CACHE_NA
 @Slf4j
 @Configuration
 public class ApplicationConfig {
+
     @Bean
     public CacheManager simpleCacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
@@ -27,4 +33,14 @@ public class ApplicationConfig {
         log.info("Initialized cache manager.");
         return cacheManager;
     }
+
+    @Bean
+    public Docket api() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("nn.dgord.cachedapp.controller.rest"))
+                .paths(PathSelectors.any())
+                .build().apiInfo(ApiInfo.DEFAULT);
+    }
+
 }
